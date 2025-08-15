@@ -86,11 +86,12 @@
         const subjectChapters = getSubjectChapters(subject);
         const availableChapters = [];
         
-        // For Marrow platform, use direct chapter names
+        // For Marrow platform, use direct chapter names with correct path structure
         for (const chapter of subjectChapters) {
           const filename = `${chapter}.json`;
           try {
-            const fileResponse = await fetch(`${platform}/${subject}/${filename}`);
+            // Fixed path: quiz/marrow/subject/filename
+            const fileResponse = await fetch(`../marrow/${subject}/${filename}`);
             if (fileResponse.ok) {
               const data = await fileResponse.json();
               if (data.questions && data.questions.length > 0) {
@@ -156,13 +157,13 @@
     }
 
     function getSubjectChapters(subject) {
-      // Return specific chapters for each subject
+      // Return specific chapters for each subject (manually added for testing)
       const subjectChapters = {
         anaesthesia: ['ACLS'],
-        anatomy: ['Abdominal_cavity_and_Peritoneum', 'Alimentary__Hepatobiliary_systems__Pancreas_and', 'Anterior_Abdominal_Wall', 'Basal_Ganglia_and_Limbic_System', 'Bone__Cartilage___Muscular_Tissue', 'Bones__Joints_and_Cartilage', 'Bones_of_the_Lower_Limb', 'Brachial_Plexus_and_Nerves', 'Brainstem', 'Breast', 'Cardiovascular__Lymphatic_and_Nervous_Systems', 'Cardiovascular__Lymphatic_and_Respiratory_Systems', 'Cardiovascular_and_Respiratory_Systems', 'Cell_Structure__Epithelia__Glands___Connective', 'Cerebellum', 'Cerebrum', 'Cranial_Nerves', 'Deep_fascia_and_Triangles_of_the_neck', 'Diaphragm', 'Diencephalon', 'Digestive__Hepatobiliary___Genitourinary_Systems', 'Embryonic_Phase_of_Development', 'Face__Nose___Palate__Eye__Ear', 'Fossae_and_Spaces_of_the_Upper_Limb', 'GI_Tract', 'Gametogenesis', 'General_Anatomy_of_Thorax', 'Glands_of_the_Head_and_Neck', 'Heart', 'Hepatobiliary_system__Spleen___Pancreas', 'Important_Structures_of_Lower_Limb', 'Internal_and_external_genitalia', 'Joints_of_the_Lower_Limb', 'KUB___Adrenal_Gland', 'Larynx', 'Lungs_and_Pleura', 'Mediastinum', 'Meninges_and_dural_venous_sinuses', 'Muscles_-_Upper_Limb', 'Muscles__Neurovascular_Anatomy_of_Head___Neck', 'Muscles_and_Tendons', 'Muscles_of_the_Lower_Limb', 'Nerves___Vessels_of_Lower_Limb', 'Nervous_System_and_Endocrine_Glands', 'Nervous_and_Endocrine_Systems', 'Osteology__Scalp_and_Face', 'Pelvis___Perineum', 'Pharyngeal_arches__Skeletal___Muscular_Systems', 'Pharynx', 'Placenta__Fetal_Membranes_and_Twinning', 'Pre-Embryonic_Phase_of_Development', 'Skin__Connective_Tissue_and_Ligaments', 'Skin___Special_Senses__Eye_and_Ear', 'Spinal_Cord', 'Thoracic_Wall', 'Tongue_and_Palate', 'Upper_Limb_Bones_and_Joints', 'Urogenital_System', 'Vascular_supply_of_Brain', 'Ventricular_System_and_Subarachnoid_Space', 'Vertebral_Column', 'Vessels-Upper_limb', 'White_Matter_of_the_Brain'],
-        biochemistry: ['Cell_and_Cell_Organelles', 'Carbohydrates', 'Proteins', 'Lipids', 'Enzymes'],
+        anatomy: ['Abdominal_cavity_and_Peritoneum', 'Anterior_Abdominal_Wall', 'Brachial_Plexus_and_Nerves'],
+        biochemistry: ['Cell_and_Cell_Organelles', 'Carbohydrates', 'Proteins'],
         dermatology: ['Anatomy_and_Physiology_of_Skin', 'Dermatitis_and_Eczema'],
-        ent: ['Anatomy_of_Mastoid', 'External_Ear', 'Middle_Ear', 'Inner_Ear'],
+        ent: ['Anatomy_of_Mastoid', 'External_Ear', 'Middle_Ear'],
         fmt: ['Introduction_to_Forensic_Medicine', 'Thanatology'],
         medicine: ['Cardiology', 'Respiratory_Medicine', 'Gastroenterology'],
         microbiology: ['General_Microbiology', 'Bacteriology', 'Virology'],

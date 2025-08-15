@@ -116,7 +116,8 @@
 
     async function loadQuestionsFromJSON(platform, subject, chapter) {
       try {
-        const response = await fetch(`${subject}/${chapter}`);
+        // Fixed path: quiz/marrow/subject/chapter
+        const response = await fetch(`../${platform}/${subject}/${chapter}`);
         
         if (!response.ok) {
           throw new Error(`Failed to load questions: ${response.status}`);
