@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marrow Quiz - NextPulse</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../../error-handler/error-handler.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <button id="backBtn" onclick="exitQuiz()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1 id="pageTitle">Quiz</h1>
+            <div class="header-actions">
+                <input type="text" id="searchInput" placeholder="Search questions...">
+                <button onclick="toggleBookmark()" id="bookmarkBtn">
+                    <i class="far fa-bookmark"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div id="quiz-container">
+            <div class="quiz-header">
+                <div class="quiz-info">
+                    <span id="questionCounter">Question 1 of 10</span>
+                    <span id="timer">10:00</span>
+                </div>
+                <div class="quiz-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question-container">
+                <div class="question-text" id="questionText">
+                    Loading question...
+                </div>
+                
+                <div class="options-container" id="optionsContainer">
+                    <!-- Options will be loaded here -->
+                </div>
+
+                <div class="question-actions">
+                    <button class="btn-secondary" onclick="previousQuestion()" id="prevBtn" disabled>
+                        Previous
+                    </button>
+                    <button class="btn-primary" onclick="nextQuestion()" id="nextBtn">
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="quiz-results" style="display: none;">
+            <div class="results-container">
+                <h2>Quiz Complete!</h2>
+                <div class="score-display">
+                    <div class="score-circle">
+                        <span id="scorePercentage">0%</span>
+                    </div>
+                    <div class="score-details">
+                        <p>Correct: <span id="correctCount">0</span></p>
+                        <p>Incorrect: <span id="incorrectCount">0</span></p>
+                        <p>Total: <span id="totalCount">0</span></p>
+                    </div>
+                </div>
+                <div class="results-actions">
+                    <button class="btn-primary" onclick="restartQuiz()">
+                        Restart Quiz
+                    </button>
+                    <button class="btn-secondary" onclick="exitQuiz()">
+                        Exit Quiz
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentQuestionIndex = 0;
+        let questions = [];
+        let userAnswers = [];
+        let score = 0;
+        let timer;
+        let timeLeft = 600; // 10 minutes in seconds
+
+        // Load quiz data
+        async function loadQuiz() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const subject = urlParams.get('subject');
+            const chapter = urlParams.get('chapter');
+            
+            if (!subject || !chapter) {
+                alert('Invalid quiz parameters');
+                exitQuiz();
+                return;
+            }
+
+            try {
+                const response = await fetch(`../data/${subject}/${chapter}.json`);
+                if (!response.ok) {
+                    throw new Error('Quiz data not found');
+                }
+                
+                const data = await response.json();
+                questions = data.questions || [];
+                
+                if (questions.length === 0) {
+                    alert('No questions found for this chapter');
+                    exitQuiz();
+                    return;
+                }
+
+                initializeQuiz();
+            } catch (error) {
+                console.error('Error loading quiz:', error);
+                alert('Error loading quiz data');
+                exitQuiz();
+            }
+        }
+
+        function initializeQuiz() {
+            userAnswers = new Array(questions.length).fill(null);
+            currentQuestionIndex = 0;
+            score = 0;
+            
+            updateQuestionCounter();
+            displayQuestion();
+            startTimer();
+        }
+
+        function displayQuestion() {
+            const question = questions[currentQuestionIndex];
+            if (!question) return;
+
+            document.getElementById('questionText').innerHTML = question.question;
+            
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+
+            question.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.innerHTML = `
+                    <input type="radio" name="answer" value="${index}" id="option${index}" 
+                           ${userAnswers[currentQuestionIndex] === index ? 'checked' : ''}>
+                    <label for="option${index}">${option}</label>
+                `;
+                optionElement.addEventListener('click', () => selectOption(index));
+                optionsContainer.appendChild(optionElement);
+            });
+
+            updateNavigationButtons();
+            updateProgressBar();
+        }
+
+        function selectOption(optionIndex) {
+            userAnswers[currentQuestionIndex] = optionIndex;
+            
+            // Update radio button
+            const radioButtons = document.querySelectorAll('input[name="answer"]');
+            radioButtons.forEach((radio, index) => {
+                radio.checked = index === optionIndex;
+            });
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                displayQuestion();
+                updateQuestionCounter();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                displayQuestion();
+                updateQuestionCounter();
+            }
+        }
+
+        function updateQuestionCounter() {
+            document.getElementById('questionCounter').textContent = 
+                `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+        }
+
+        function updateNavigationButtons() {
+            document.getElementById('prevBtn').disabled = currentQuestionIndex === 0;
+            document.getElementById('nextBtn').textContent = 
+                currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next';
+        }
+
+        function updateProgressBar() {
+            const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    finishQuiz();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('timer').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function finishQuiz() {
+            clearInterval(timer);
+            calculateScore();
+            showResults();
+        }
+
+        function calculateScore() {
+            score = 0;
+            userAnswers.forEach((answer, index) => {
+                if (answer !== null && answer === questions[index].correctAnswer) {
+                    score++;
+                }
+            });
+        }
+
+        function showResults() {
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('quiz-results').style.display = 'block';
+            
+            const percentage = Math.round((score / questions.length) * 100);
+            document.getElementById('scorePercentage').textContent = `${percentage}%`;
+            document.getElementById('correctCount').textContent = score;
+            document.getElementById('incorrectCount').textContent = questions.length - score;
+            document.getElementById('totalCount').textContent = questions.length;
+        }
+
+        function toggleBookmark() {
+            const question = questions[currentQuestionIndex];
+            if (!question) return;
+
+            const bookmarkBtn = document.getElementById('bookmarkBtn');
+            const icon = bookmarkBtn.querySelector('i');
+            
+            if (icon.classList.contains('far')) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                // Add to bookmarks logic here
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                // Remove from bookmarks logic here
+            }
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            // Implement search logic here
+        });
+
+        // Update navigation functions to use safe navigation
+        function exitQuiz() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const subject = urlParams.get('subject');
+            window.safeNavigate(`chapters.html?subject=${subject}`);
+        }
+        
+        function restartQuiz() {
+            window.location.reload();
+        }
+        
+        function backToMainMenu() {
+            window.safeNavigate('../index.html');
+        }
+
+        // Initialize quiz when page loads
+        window.addEventListener('load', loadQuiz);
+    </script>
+</body>
+</html>
